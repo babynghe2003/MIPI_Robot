@@ -1,5 +1,6 @@
 #include "mpu9250_idf.h"
 #include "esp_log.h"
+#include "i2c_bus.h"
 #include <math.h>
 #include <cstring>
 #include "freertos/FreeRTOS.h"
@@ -124,8 +125,8 @@ static const char *TAG = "MPU9250";
 #define AK8963_ASAY                  0x11
 #define AK8963_ASAZ                  0x12
 
-MPU9250::MPU9250(i2c_port_t port, uint8_t addr)
-    : _i2c_port(port), _i2c_addr(addr)
+MPU9250::MPU9250(i2c_bus_handle_t bus_handle, i2c_bus_device_handle_t device_handle)
+    : _bus_handle(bus_handle), _device_handle(device_handle), _mag_device_handle(NULL)
 {
     // Initialize variables
     _accCoef = 0.02f;
@@ -245,6 +246,13 @@ esp_err_t MPU9250::configureGyro() {
 }
 
 esp_err_t MPU9250::configureMag() {
+    // Create magnetometer device handle
+    _mag_device_handle = i2c_bus_device_create(_bus_handle, AK8963_ADDR, 0);
+    if (!_mag_device_handle) {
+        ESP_LOGE(TAG, "Failed to create AK8963 device handle");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
     // Enable I2C master mode
     esp_err_t ret = writeByte(MPU9250_USER_CTRL, 0x20);
     if (ret != ESP_OK) {
@@ -571,31 +579,56 @@ void MPU9250::resetAngles() {
 }
 
 esp_err_t MPU9250::writeByte(uint8_t reg, uint8_t data) {
-    uint8_t buffer[2] = {reg, data};
-    return i2c_master_write_to_device(_i2c_port, _i2c_addr, buffer, 2, 100 / portTICK_PERIOD_MS);
+    return i2c_bus_write_bytes(_device_handle, reg, 1, &data);
 }
 
 uint8_t MPU9250::readByte(uint8_t reg) {
     uint8_t data;
-    i2c_master_write_read_device(_i2c_port, _i2c_addr, &reg, 1, &data, 1, 100 / portTICK_PERIOD_MS);
+    esp_err_t ret = i2c_bus_read_bytes(_device_handle, reg, 1, &data);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read byte from reg 0x%02X", reg);
+        return 0;
+    }
     return data;
 }
 
 esp_err_t MPU9250::readBytes(uint8_t reg, uint8_t *buffer, size_t len) {
-    return i2c_master_write_read_device(_i2c_port, _i2c_addr, &reg, 1, buffer, len, 100 / portTICK_PERIOD_MS);
+    return i2c_bus_read_bytes(_device_handle, reg, len, buffer);
 }
 
 esp_err_t MPU9250::writeMagByte(uint8_t reg, uint8_t data) {
-    uint8_t buffer[2] = {reg, data};
-    return i2c_master_write_to_device(_i2c_port, AK8963_ADDR, buffer, 2, 100 / portTICK_PERIOD_MS);
+    if (!_mag_device_handle) {
+        ESP_LOGE(TAG, "Magnetometer device not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    return i2c_bus_write_bytes(_mag_device_handle, reg, 1, &data);
 }
 
 uint8_t MPU9250::readMagByte(uint8_t reg) {
+    if (!_mag_device_handle) {
+        ESP_LOGE(TAG, "Magnetometer device not initialized");
+        return 0;
+    }
     uint8_t data;
-    i2c_master_write_read_device(_i2c_port, AK8963_ADDR, &reg, 1, &data, 1, 100 / portTICK_PERIOD_MS);
+    esp_err_t ret = i2c_bus_read_bytes(_mag_device_handle, reg, 1, &data);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read mag byte from reg 0x%02X", reg);
+        return 0;
+    }
     return data;
 }
 
 esp_err_t MPU9250::readMagBytes(uint8_t reg, uint8_t *buffer, size_t len) {
-    return i2c_master_write_read_device(_i2c_port, AK8963_ADDR, &reg, 1, buffer, len, 100 / portTICK_PERIOD_MS);
+    if (!_mag_device_handle) {
+        ESP_LOGE(TAG, "Magnetometer device not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    return i2c_bus_read_bytes(_mag_device_handle, reg, len, buffer);
+}
+
+MPU9250::~MPU9250() {
+    // Clean up magnetometer device handle
+    if (_mag_device_handle) {
+        i2c_bus_device_delete(&_mag_device_handle);
+    }
 }

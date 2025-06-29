@@ -2,7 +2,7 @@
 
 #include "mpu9250_control.h"
 #include "esp_log.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,7 +12,7 @@ extern "C" {
 typedef struct mpu9250_handle mpu9250_handle_t;
 
 // External C++ functions - defined in separate C++ file
-extern mpu9250_handle_t* mpu9250_cpp_create(int i2c_port);
+extern mpu9250_handle_t* mpu9250_cpp_create(i2c_bus_handle_t bus_handle, i2c_bus_device_handle_t device_handle);
 extern int mpu9250_cpp_begin(mpu9250_handle_t* handle);
 extern int mpu9250_cpp_read_sensor(mpu9250_handle_t* handle);
 extern void mpu9250_cpp_get_angles(mpu9250_handle_t* handle, float* x, float* y, float* z);
@@ -26,6 +26,8 @@ extern void mpu9250_cpp_reset_angles(mpu9250_handle_t* handle);
 extern void mpu9250_cpp_destroy(mpu9250_handle_t* handle);
 
 static const char *TAG = "mpu9250_control";
+static i2c_bus_handle_t i2c_bus_handle = NULL;
+static i2c_bus_device_handle_t mpu_device_handle = NULL;
 static mpu9250_handle_t *mpu_handle = NULL;
 static bool mpu_initialized = false;
 
@@ -35,7 +37,7 @@ esp_err_t mpu9250_init(void) {
         return ESP_OK;
     }
 
-    // Initialize I2C master
+    // Initialize I2C bus using i2c_bus
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = I2C_MASTER_SDA_IO,
@@ -47,37 +49,42 @@ esp_err_t mpu9250_init(void) {
         },
     };
 
-    esp_err_t ret = i2c_param_config(I2C_MASTER_NUM, &conf);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to configure I2C parameters: %s", esp_err_to_name(ret));
-        return ret;
+    // Create I2C bus
+    i2c_bus_handle = i2c_bus_create(I2C_MASTER_NUM, &conf);
+    if (!i2c_bus_handle) {
+        ESP_LOGE(TAG, "Failed to create I2C bus");
+        return ESP_ERR_INVALID_STATE;
     }
 
-    ret = i2c_driver_install(I2C_MASTER_NUM, conf.mode, 
-                            I2C_MASTER_RX_BUF_DISABLE, 
-                            I2C_MASTER_TX_BUF_DISABLE, 0);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to install I2C driver: %s", esp_err_to_name(ret));
-        return ret;
+    // Create MPU9250 device on the bus (address 0x68, default clock speed)
+    mpu_device_handle = i2c_bus_device_create(i2c_bus_handle, 0x68, 0);
+    if (!mpu_device_handle) {
+        ESP_LOGE(TAG, "Failed to create MPU9250 device");
+        i2c_bus_delete(&i2c_bus_handle);
+        return ESP_ERR_INVALID_STATE;
     }
 
-    // Initialize MPU9250
-    mpu_handle = mpu9250_cpp_create(I2C_MASTER_NUM);
+    // Initialize MPU9250 C++ wrapper
+    mpu_handle = mpu9250_cpp_create(i2c_bus_handle, mpu_device_handle);
     if (!mpu_handle) {
         ESP_LOGE(TAG, "Failed to create MPU9250 instance");
+        i2c_bus_device_delete(&mpu_device_handle);
+        i2c_bus_delete(&i2c_bus_handle);
         return ESP_ERR_NO_MEM;
     }
 
-    ret = mpu9250_cpp_begin(mpu_handle);
+    esp_err_t ret = mpu9250_cpp_begin(mpu_handle);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize MPU9250: %s", esp_err_to_name(ret));
         mpu9250_cpp_destroy(mpu_handle);
         mpu_handle = NULL;
+        i2c_bus_device_delete(&mpu_device_handle);
+        i2c_bus_delete(&i2c_bus_handle);
         return ret;
     }
 
     mpu_initialized = true;
-    ESP_LOGI(TAG, "MPU9250 initialized successfully on I2C pins SDA=%d, SCL=%d", 
+    ESP_LOGI(TAG, "MPU9250 initialized successfully using i2c_bus on pins SDA=%d, SCL=%d", 
              I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
     return ESP_OK;
 }
@@ -189,7 +196,15 @@ esp_err_t mpu9250_deinit(void) {
         mpu_handle = NULL;
     }
 
-    esp_err_t ret = i2c_driver_delete(I2C_MASTER_NUM);
+    if (mpu_device_handle) {
+        i2c_bus_device_delete(&mpu_device_handle);
+    }
+
+    esp_err_t ret = ESP_OK;
+    if (i2c_bus_handle) {
+        ret = i2c_bus_delete(&i2c_bus_handle);
+    }
+    
     mpu_initialized = false;
     
     ESP_LOGI(TAG, "MPU9250 deinitialized");

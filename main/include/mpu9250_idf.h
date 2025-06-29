@@ -1,13 +1,16 @@
 #pragma once
 
 #include <stdint.h>
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "esp_err.h"
 
 class MPU9250 {
 public:
     // Constructor
-    MPU9250(i2c_port_t port, uint8_t addr = 0x68);
+    MPU9250(i2c_bus_handle_t bus_handle, i2c_bus_device_handle_t device_handle);
+    
+    // Destructor
+    ~MPU9250();
 
     // Core functions
     esp_err_t begin();
@@ -71,8 +74,9 @@ public:
 
 private:
     // I2C configuration
-    i2c_port_t _i2c_port;
-    uint8_t _i2c_addr;
+    i2c_bus_handle_t _bus_handle;
+    i2c_bus_device_handle_t _device_handle;
+    i2c_bus_device_handle_t _mag_device_handle;  // For AK8963 magnetometer
     uint8_t _deviceType;  // Store detected device type (0x68, 0x70, 0x71)
     
     // Raw sensor data

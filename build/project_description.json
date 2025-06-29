@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "MIPIRobot_NEO",
-    "project_version":    "1",
+    "project_version":    "fc0e941-dirty",
     "project_path":       "/home/minhphi/Documents/espressif/MIPIRobot_NEO",
     "idf_path":           "/home/minhphi/esp/v5.4.1/esp-idf",
     "build_dir":          "/home/minhphi/Documents/espressif/MIPIRobot_NEO/build",

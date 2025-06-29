@@ -2,6 +2,7 @@
 
 #include "mpu9250_idf.h"
 #include "esp_err.h"
+#include "i2c_bus.h"
 #include <cstdlib>
 
 #ifdef __cplusplus
@@ -11,16 +12,22 @@ extern "C" {
 // Opaque handle structure
 typedef struct mpu9250_handle {
     MPU9250* mpu_instance;
+    i2c_bus_handle_t bus_handle;
+    i2c_bus_device_handle_t device_handle;
 } mpu9250_handle_t;
 
 // Create MPU9250 instance
-mpu9250_handle_t* mpu9250_cpp_create(int i2c_port) {
+mpu9250_handle_t* mpu9250_cpp_create(i2c_bus_handle_t bus_handle, i2c_bus_device_handle_t device_handle) {
     mpu9250_handle_t* handle = (mpu9250_handle_t*)malloc(sizeof(mpu9250_handle_t));
     if (!handle) {
         return NULL;
     }
     
-    handle->mpu_instance = new MPU9250((i2c_port_t)i2c_port, 0x68);
+    // Store handles for later use
+    handle->bus_handle = bus_handle;
+    handle->device_handle = device_handle;
+    
+    handle->mpu_instance = new MPU9250(bus_handle, device_handle);
     if (!handle->mpu_instance) {
         free(handle);
         return NULL;

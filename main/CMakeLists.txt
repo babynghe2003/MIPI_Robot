@@ -1,0 +1,19 @@
+idf_component_register(
+    SRCS 
+        "main.c"
+        "modules/servo/servo_control.c"
+        "modules/servo/servo_task.c"
+        "modules/led/led_control.c"
+        "modules/led/led_task.c"
+        "modules/sensors/mpu9250_idf.cpp"
+        "modules/sensors/mpu9250_bridge.cpp"
+        "modules/sensors/mpu9250_control.c"
+        "modules/sensors/mpu9250_task.c"
+        "tasks/task_manager.c"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES 
+        "espressif__servo"
+        "espressif__led_strip"
+        "driver"
+)

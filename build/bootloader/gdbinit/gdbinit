@@ -1,0 +1,2 @@
+source /home/minhphi/Documents/espressif/MIPIRobot_NEO/build/bootloader/gdbinit/symbols
+source /home/minhphi/Documents/espressif/MIPIRobot_NEO/build/bootloader/gdbinit/connect

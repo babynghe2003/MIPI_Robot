@@ -1,0 +1,6 @@
+dependencies:
+  espressif/led_strip: ^2.4.1
+  espressif/servo: ^0.1.0
+  espressif/esp_simplefoc: ^1.2.1
+  espressif/esp-sr: ^2.1.4
+  truita/mpu9250: ^1.0.1

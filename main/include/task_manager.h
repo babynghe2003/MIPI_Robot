@@ -11,10 +11,7 @@
 void led_task(void *pvParameters);
 void servo_task(void *pvParameters);
 void mpu9250_task(void *pvParameters);
-
-// Future task prototypes
-void audio_task(void *pvParameters);
-void communication_task(void *pvParameters);
+void bldc_task(void *pvParameters);
 
 /**
  * @brief Initialize and start all enabled tasks

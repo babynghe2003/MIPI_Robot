@@ -133,23 +133,12 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.4.1
-  truita/mpu9250:
-    component_hash: 3403bfddacef335397281d3191845d4e09c792e5fe62aff8689bcc67a388c645
-    dependencies:
-    - name: idf
-      require: private
-      version: '>=5.0'
-    source:
-      registry_url: https://components.espressif.com/
-      type: service
-    version: 1.0.1
+    version: 5.1.6
 direct_dependencies:
 - espressif/esp-sr
 - espressif/esp_simplefoc
 - espressif/led_strip
 - espressif/servo
-- truita/mpu9250
-manifest_hash: bb3a269b4f4a26b1e32d1c8e4a88e21bc67cbe3cefacfe44cf354e0fdeb32348
+manifest_hash: 633516ba1c1c981cbedf3e1a05c12fc66f267f449acef1e607562f3c9c8a180e
 target: esp32s3
 version: 2.0.0

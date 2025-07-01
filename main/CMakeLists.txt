@@ -9,11 +9,14 @@ idf_component_register(
         "modules/sensors/mpu9250_bridge.cpp"
         "modules/sensors/mpu9250_control.c"
         "modules/sensors/mpu9250_task.c"
+        "modules/bldc/bldc_control.cpp"
+        "modules/bldc/bldc_task.c"
         "tasks/task_manager.c"
     INCLUDE_DIRS 
         "include"
     REQUIRES 
         "espressif__servo"
         "espressif__led_strip"
+        "espressif__esp_simplefoc"
         "driver"
 )

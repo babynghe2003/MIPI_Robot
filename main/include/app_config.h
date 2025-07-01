@@ -11,8 +11,8 @@
 #define LED_GPIO_PIN                CONFIG_BLINK_GPIO  // LED pin
 
 // I2C Configuration (for MPU6050 and other sensors)
-#define I2C_MASTER_SCL_IO           9     // I2C master clock (ESP32-S3)
-#define I2C_MASTER_SDA_IO           8     // I2C master data (ESP32-S3)
+#define I2C_MASTER_SCL_IO           GPIO_NUM_9     // I2C master clock (ESP32-S3)
+#define I2C_MASTER_SDA_IO           GPIO_NUM_8     // I2C master data (ESP32-S3)
 #define I2C_MASTER_NUM              I2C_NUM_0     // I2C master i2c port number
 #define I2C_MASTER_FREQ_HZ          400000  // I2C master clock frequency
 #define I2C_MASTER_TX_BUF_DISABLE   0     // I2C master doesn't need buffer
@@ -40,9 +40,10 @@
 #define TASK_DELAY_MS_SLOW          1000
 
 /* ========== Module Enable/Disable ========== */
-#define MODULE_SERVO_ENABLED        1
+#define MODULE_SERVO_ENABLED        0
 #define MODULE_LED_ENABLED          1
 #define MODULE_SENSORS_ENABLED      1  // Enable when MPU is added
+#define MODULE_BLDC_ENABLED         1  // Enable BLDC motor control
 #define MODULE_AUDIO_ENABLED        0  // Enable when I2S mic is added
 #define MODULE_WIFI_ENABLED         0  // Enable when WiFi is needed
 

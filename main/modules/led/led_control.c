@@ -33,25 +33,10 @@ esp_err_t led_init(void) {
         return ret;
     }
     ESP_LOGI(TAG, "RMT LED strip device created successfully");
-#elif CONFIG_BLINK_LED_STRIP_BACKEND_SPI
-    led_strip_spi_config_t spi_config = {
-        .spi_bus = SPI2_HOST,
-        .flags.with_dma = true,
-    };
-    esp_err_t ret = led_strip_new_spi_device(&strip_config, &spi_config, &led_strip);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to create SPI LED strip device: %s", esp_err_to_name(ret));
-        return ret;
-    }
-    ESP_LOGI(TAG, "SPI LED strip device created successfully");
 #endif
 
     led_strip_clear(led_strip);
     
-#elif CONFIG_BLINK_LED_GPIO
-    ESP_LOGI(TAG, "Initializing GPIO LED");
-    gpio_reset_pin(LED_GPIO_PIN);
-    gpio_set_direction(LED_GPIO_PIN, GPIO_MODE_OUTPUT);
 #endif
 
     led_initialized = true;
@@ -67,13 +52,11 @@ esp_err_t led_set_state(bool state) {
 
 #ifdef CONFIG_BLINK_LED_STRIP
     if (state) {
-        led_strip_set_pixel(led_strip, 0, 50, 16, 16);
+        led_strip_set_pixel(led_strip, 0, 5,5,10);
         led_strip_refresh(led_strip);
     } else {
         led_strip_clear(led_strip);
     }
-#elif CONFIG_BLINK_LED_GPIO
-    gpio_set_level(LED_GPIO_PIN, state);
 #endif
 
     return ESP_OK;

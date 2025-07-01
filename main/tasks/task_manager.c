@@ -3,6 +3,7 @@
 #include "task_manager.h"
 #include "app_config.h"
 #include "esp_log.h"
+#include "bldc_control.h"
 #include <inttypes.h>
 
 static const char *TAG = "task_manager";
@@ -70,6 +71,27 @@ esp_err_t task_manager_init(void) {
         ESP_LOGI(TAG, "MPU9250 task created successfully");
         
         // Add delay after sensor initialization
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    
+    // Create BLDC task if enabled
+    if (MODULE_BLDC_ENABLED) {
+        ESP_LOGI(TAG, "Creating BLDC task...");
+        BaseType_t bldc_task_created = xTaskCreate(
+            bldc_task, 
+            "bldc_task", 
+            TASK_STACK_SIZE_LARGE,  // BLDC needs more stack for FOC calculations
+            NULL, 
+            TASK_PRIORITY_HIGH,     // Higher priority for real-time control
+            NULL
+        );
+        if (bldc_task_created != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create BLDC task");
+            return ESP_FAIL;
+        }
+        ESP_LOGI(TAG, "BLDC task created successfully");
+        
+        // Add delay after BLDC initialization
         vTaskDelay(pdMS_TO_TICKS(500));
     }
     

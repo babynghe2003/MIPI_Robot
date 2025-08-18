@@ -3,7 +3,6 @@
 #include "task_manager.h"
 #include "app_config.h"
 #include "esp_log.h"
-#include "bldc_control.h"
 #include <inttypes.h>
 
 static const char *TAG = "task_manager";
@@ -56,15 +55,15 @@ esp_err_t task_manager_init(void) {
     // Create MPU9250 sensor task if enabled
     if (MODULE_SENSORS_ENABLED) {
         ESP_LOGI(TAG, "Creating MPU9250 sensor task...");
-        BaseType_t mpu_task_created = xTaskCreate(
-            mpu9250_task, 
-            "mpu9250_task", 
+        BaseType_t robot_task_created = xTaskCreate(
+            robot_task, 
+            "robot_task", 
             TASK_STACK_SIZE_LARGE,  // MPU9250 needs more stack for I2C operations
             NULL, 
             TASK_PRIORITY_NORMAL, 
             NULL
         );
-        if (mpu_task_created != pdPASS) {
+        if (robot_task_created != pdPASS) {
             ESP_LOGE(TAG, "Failed to create MPU9250 task");
             return ESP_FAIL;
         }
@@ -73,27 +72,7 @@ esp_err_t task_manager_init(void) {
         // Add delay after sensor initialization
         vTaskDelay(pdMS_TO_TICKS(500));
     }
-    
-    // Create BLDC task if enabled
-    if (MODULE_BLDC_ENABLED) {
-        ESP_LOGI(TAG, "Creating BLDC task...");
-        BaseType_t bldc_task_created = xTaskCreate(
-            bldc_task, 
-            "bldc_task", 
-            TASK_STACK_SIZE_LARGE,  // BLDC needs more stack for FOC calculations
-            NULL, 
-            TASK_PRIORITY_HIGH,     // Higher priority for real-time control
-            NULL
-        );
-        if (bldc_task_created != pdPASS) {
-            ESP_LOGE(TAG, "Failed to create BLDC task");
-            return ESP_FAIL;
-        }
-        ESP_LOGI(TAG, "BLDC task created successfully");
-        
-        // Add delay after BLDC initialization
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
+
     
     // Future: Add audio, communication tasks here
     /*

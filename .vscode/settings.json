@@ -11,6 +11,7 @@
     "IDF_TARGET": "esp32s3"
   },
   "files.associations": {
-    "arduino.h": "c"
+    "arduino.h": "c",
+    "format": "cpp"
   }
 }

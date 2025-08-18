@@ -10,7 +10,7 @@
 #define SERVO_GPIO_PIN              11    // Servo motor pin
 #define LED_GPIO_PIN                CONFIG_BLINK_GPIO  // LED pin
 
-// I2C Configuration (for MPU6050 and other sensors)
+// I2C Configuration (for MPU9250 and other sensors with TCA9548A multiplexer)
 #define I2C_MASTER_SCL_IO           GPIO_NUM_9     // I2C master clock (ESP32-S3)
 #define I2C_MASTER_SDA_IO           GPIO_NUM_8     // I2C master data (ESP32-S3)
 #define I2C_MASTER_NUM              I2C_NUM_0     // I2C master i2c port number
@@ -18,6 +18,10 @@
 #define I2C_MASTER_TX_BUF_DISABLE   0     // I2C master doesn't need buffer
 #define I2C_MASTER_RX_BUF_DISABLE   0     // I2C master doesn't need buffer
 #define I2C_MASTER_TIMEOUT_MS       1000
+
+// TCA9548A I2C Multiplexer Configuration
+#define TCA9548A_I2C_ADDR           0x70   // TCA9548A I2C address
+#define MPU9250_MUX_CHANNEL         1      // MPU9250 is on channel 0
 
 // I2S Configuration (for future audio)
 #define I2S_SAMPLE_RATE             16000  // Sample rate for audio

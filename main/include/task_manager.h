@@ -10,9 +10,7 @@
 // Task function prototypes
 void led_task(void *pvParameters);
 void servo_task(void *pvParameters);
-void mpu9250_task(void *pvParameters);
-void bldc_task(void *pvParameters);
-
+void robot_task(void *pvParameters);
 /**
  * @brief Initialize and start all enabled tasks
  */

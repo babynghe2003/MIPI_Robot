@@ -1,6 +1,7 @@
 /* MPU9250 Sensor Control Implementation - C wrapper for C++ class */
 
 #include "mpu9250_control.h"
+#include "tca9548a.h"
 #include "esp_log.h"
 #include "i2c_bus.h"
 
@@ -29,13 +30,20 @@ static const char *TAG = "mpu9250_control";
 static i2c_bus_handle_t i2c_bus_handle = NULL;
 static i2c_bus_device_handle_t mpu_device_handle = NULL;
 static mpu9250_handle_t *mpu_handle = NULL;
+static tca9548a_handle_t *mux_handle = NULL;
 static bool mpu_initialized = false;
+static bool use_multiplexer = false;
+static uint8_t mux_channel = 0;
 
-esp_err_t mpu9250_init(void) {
+esp_err_t mpu9250_init(bool use_mux, uint8_t channel) {
     if (mpu_initialized) {
         ESP_LOGW(TAG, "MPU9250 already initialized");
         return ESP_OK;
     }
+
+    // Store multiplexer settings
+    use_multiplexer = use_mux;
+    mux_channel = channel;
 
     // Initialize I2C bus using i2c_bus
     i2c_config_t conf = {
@@ -56,10 +64,40 @@ esp_err_t mpu9250_init(void) {
         return ESP_ERR_INVALID_STATE;
     }
 
+    // Debug: Scan I2C bus to see available devices
+    ESP_LOGI(TAG, "Scanning I2C bus before initializing TCA9548A...");
+    i2c_scan_bus(i2c_bus_handle);
+
+    // Initialize TCA9548A multiplexer if requested
+    if (use_multiplexer) {
+        mux_handle = tca9548a_init(i2c_bus_handle, TCA9548A_I2C_ADDR);
+        if (!mux_handle) {
+            ESP_LOGE(TAG, "Failed to initialize TCA9548A multiplexer");
+            i2c_bus_delete(&i2c_bus_handle);
+            return ESP_ERR_INVALID_STATE;
+        }
+
+        // Select the MPU9250 channel
+        esp_err_t ret = tca9548a_select_channel(mux_handle, mux_channel);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to select MPU9250 channel %d", mux_channel);
+            tca9548a_deinit(mux_handle);
+            mux_handle = NULL;
+            i2c_bus_delete(&i2c_bus_handle);
+            return ret;
+        }
+
+        ESP_LOGI(TAG, "TCA9548A multiplexer initialized, MPU9250 on channel %d", mux_channel);
+    }
+
     // Create MPU9250 device on the bus (address 0x68, default clock speed)
     mpu_device_handle = i2c_bus_device_create(i2c_bus_handle, 0x68, 0);
     if (!mpu_device_handle) {
         ESP_LOGE(TAG, "Failed to create MPU9250 device");
+        if (mux_handle) {
+            tca9548a_deinit(mux_handle);
+            mux_handle = NULL;
+        }
         i2c_bus_delete(&i2c_bus_handle);
         return ESP_ERR_INVALID_STATE;
     }
@@ -69,6 +107,10 @@ esp_err_t mpu9250_init(void) {
     if (!mpu_handle) {
         ESP_LOGE(TAG, "Failed to create MPU9250 instance");
         i2c_bus_device_delete(&mpu_device_handle);
+        if (mux_handle) {
+            tca9548a_deinit(mux_handle);
+            mux_handle = NULL;
+        }
         i2c_bus_delete(&i2c_bus_handle);
         return ESP_ERR_NO_MEM;
     }
@@ -79,20 +121,44 @@ esp_err_t mpu9250_init(void) {
         mpu9250_cpp_destroy(mpu_handle);
         mpu_handle = NULL;
         i2c_bus_device_delete(&mpu_device_handle);
+        if (mux_handle) {
+            tca9548a_deinit(mux_handle);
+            mux_handle = NULL;
+        }
         i2c_bus_delete(&i2c_bus_handle);
         return ret;
     }
 
     mpu_initialized = true;
-    ESP_LOGI(TAG, "MPU9250 initialized successfully using i2c_bus on pins SDA=%d, SCL=%d", 
-             I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
+    
+    if (use_multiplexer) {
+        ESP_LOGI(TAG, "MPU9250 initialized successfully with TCA9548A multiplexer (channel %d) on pins SDA=%d, SCL=%d", 
+                 mux_channel, I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
+    } else {
+        ESP_LOGI(TAG, "MPU9250 initialized successfully using direct I2C on pins SDA=%d, SCL=%d", 
+                 I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
+    }
+    
     return ESP_OK;
+}
+
+esp_err_t mpu9250_init_legacy(void) {
+    return mpu9250_init(false, 0);
 }
 
 esp_err_t mpu9250_read_sensor(void) {
     if (!mpu_initialized || !mpu_handle) {
         ESP_LOGE(TAG, "MPU9250 not initialized");
         return ESP_ERR_INVALID_STATE;
+    }
+
+    // Select MPU9250 channel if using multiplexer
+    if (use_multiplexer && mux_handle) {
+        esp_err_t ret = tca9548a_select_channel(mux_handle, mux_channel);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to select MPU9250 channel before reading");
+            return ret;
+        }
     }
 
     return mpu9250_cpp_read_sensor(mpu_handle);
@@ -200,12 +266,19 @@ esp_err_t mpu9250_deinit(void) {
         i2c_bus_device_delete(&mpu_device_handle);
     }
 
+    // Cleanup multiplexer if used
+    if (mux_handle) {
+        tca9548a_deinit(mux_handle);
+        mux_handle = NULL;
+    }
+
     esp_err_t ret = ESP_OK;
     if (i2c_bus_handle) {
         ret = i2c_bus_delete(&i2c_bus_handle);
     }
     
     mpu_initialized = false;
+    use_multiplexer = false;
     
     ESP_LOGI(TAG, "MPU9250 deinitialized");
     return ret;

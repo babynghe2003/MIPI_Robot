@@ -5,6 +5,7 @@
 
 #include "esp_err.h"
 #include "app_config.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,9 +36,16 @@ typedef struct {
 } mpu9250_mag_t;
 
 /**
- * @brief Initialize I2C and MPU9250 sensor
+ * @brief Initialize I2C, TCA9548A multiplexer and MPU9250 sensor
+ * @param use_multiplexer Enable TCA9548A multiplexer support
+ * @param mux_channel Channel number on TCA9548A (0-7, ignored if use_multiplexer is false)
  */
-esp_err_t mpu9250_init(void);
+esp_err_t mpu9250_init(bool use_multiplexer, uint8_t mux_channel);
+
+/**
+ * @brief Initialize I2C and MPU9250 sensor (legacy - without multiplexer)
+ */
+esp_err_t mpu9250_init_legacy(void);
 
 /**
  * @brief Read sensor data

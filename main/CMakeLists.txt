@@ -5,12 +5,13 @@ idf_component_register(
         "modules/servo/servo_task.c"
         "modules/led/led_control.c"
         "modules/led/led_task.c"
+        "modules/sensors/i2c_scanner.c"
+        "modules/sensors/tca9548a.c"
+        "modules/sensors/tca9548a_utils.c"
         "modules/sensors/mpu9250_idf.cpp"
         "modules/sensors/mpu9250_bridge.cpp"
         "modules/sensors/mpu9250_control.c"
-        "modules/sensors/mpu9250_task.c"
-        "modules/bldc/bldc_control.cpp"
-        "modules/bldc/bldc_task.c"
+        "modules/sensors/robot_task.cpp"
         "tasks/task_manager.c"
     INCLUDE_DIRS 
         "include"
@@ -18,5 +19,6 @@ idf_component_register(
         "espressif__servo"
         "espressif__led_strip"
         "espressif__esp_simplefoc"
+        "espressif__i2c_bus"
         "driver"
 )

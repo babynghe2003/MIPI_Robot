@@ -142,6 +142,54 @@ esp_err_t mpu9250_init(bool use_mux, uint8_t channel) {
     return ESP_OK;
 }
 
+esp_err_t mpu9250_init_with_bus(i2c_bus_handle_t bus_handle) {
+    if (mpu_initialized) {
+        ESP_LOGW(TAG, "MPU9250 already initialized");
+        return ESP_OK;
+    }
+
+    if (!bus_handle) {
+        ESP_LOGE(TAG, "Invalid I2C bus handle provided");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    // Use the provided I2C bus handle
+    i2c_bus_handle = bus_handle;
+    use_multiplexer = false;
+    mux_channel = 0;
+
+    ESP_LOGI(TAG, "Using shared I2C bus for MPU9250");
+
+    // Create MPU9250 device handle (address 0x68, default clock speed)
+    mpu_device_handle = i2c_bus_device_create(i2c_bus_handle, 0x68, 0);
+    if (!mpu_device_handle) {
+        ESP_LOGE(TAG, "Failed to create MPU9250 device handle");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    // Initialize MPU9250 C++ wrapper
+    mpu_handle = mpu9250_cpp_create(i2c_bus_handle, mpu_device_handle);
+    if (!mpu_handle) {
+        ESP_LOGE(TAG, "Failed to create MPU9250 instance");
+        i2c_bus_device_delete(&mpu_device_handle);
+        return ESP_ERR_NO_MEM;
+    }
+
+    esp_err_t ret = mpu9250_cpp_begin(mpu_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize MPU9250: %s", esp_err_to_name(ret));
+        mpu9250_cpp_destroy(mpu_handle);
+        mpu_handle = NULL;
+        i2c_bus_device_delete(&mpu_device_handle);
+        return ret;
+    }
+
+    mpu_initialized = true;
+    ESP_LOGI(TAG, "MPU9250 initialized successfully with shared bus");
+    
+    return ESP_OK;
+}
+
 esp_err_t mpu9250_init_legacy(void) {
     return mpu9250_init(false, 0);
 }

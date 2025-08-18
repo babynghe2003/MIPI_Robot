@@ -5,6 +5,7 @@
 
 #include "esp_err.h"
 #include "app_config.h"
+#include "i2c_bus.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -41,6 +42,12 @@ typedef struct {
  * @param mux_channel Channel number on TCA9548A (0-7, ignored if use_multiplexer is false)
  */
 esp_err_t mpu9250_init(bool use_multiplexer, uint8_t mux_channel);
+
+/**
+ * @brief Initialize MPU9250 with existing shared I2C bus (no multiplexer needed)
+ * @param bus_handle Existing I2C bus handle to use
+ */
+esp_err_t mpu9250_init_with_bus(i2c_bus_handle_t bus_handle);
 
 /**
  * @brief Initialize I2C and MPU9250 sensor (legacy - without multiplexer)

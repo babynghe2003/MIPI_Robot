@@ -8,6 +8,7 @@ idf_component_register(
         "modules/sensors/i2c_scanner.c"
         "modules/sensors/tca9548a.c"
         "modules/sensors/tca9548a_utils.c"
+        "modules/sensors/as5600.c"
         "modules/sensors/mpu9250_idf.cpp"
         "modules/sensors/mpu9250_bridge.cpp"
         "modules/sensors/mpu9250_control.c"
@@ -18,7 +19,6 @@ idf_component_register(
     REQUIRES 
         "espressif__servo"
         "espressif__led_strip"
-        "espressif__esp_simplefoc"
         "espressif__i2c_bus"
         "driver"
 )

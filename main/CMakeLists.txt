@@ -20,5 +20,6 @@ idf_component_register(
         "espressif__servo"
         "espressif__led_strip"
         "espressif__i2c_bus"
+        "espressif__esp_simplefoc"
         "driver"
 )

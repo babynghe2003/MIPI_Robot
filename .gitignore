@@ -15,6 +15,7 @@ partition_table/
 # Dependencies and packages
 dependencies.lock
 managed_components/
+.cache/
 
 # IDE and editor files
 .vscode/

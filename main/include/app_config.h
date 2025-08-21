@@ -38,6 +38,20 @@
 #define TASK_PRIORITY_NORMAL        10
 #define TASK_PRIORITY_HIGH          15
 
+// Left Sensor Channel
+#define LEFT_CHANNEL 1
+#define RIGHT_CHANNEL 0
+
+// Left motor pins
+#define LEFT_MOTOR_CHANNEL_A 5 
+#define LEFT_MOTOR_CHANNEL_B 6
+#define LEFT_MOTOR_CHANNEL_C 7
+
+// Right motor pins
+#define RIGHT_MOTOR_CHANNEL_A 12
+#define RIGHT_MOTOR_CHANNEL_B 13
+#define RIGHT_MOTOR_CHANNEL_C 14
+
 // Task Delays
 #define TASK_DELAY_MS_FAST          50
 #define TASK_DELAY_MS_NORMAL        100
@@ -54,5 +68,6 @@
 /* ========== Debug Configuration ========== */
 #define DEBUG_TASK_HEARTBEAT        1  // Enable task heartbeat logs
 #define DEBUG_SENSOR_DATA           1  // Enable sensor data logs
+
 
 #endif // APP_CONFIG_H

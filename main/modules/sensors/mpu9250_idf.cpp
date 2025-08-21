@@ -502,7 +502,7 @@ esp_err_t MPU9250::calibrateGyro() {
             float gzf = (float)gz * _gyroScale;
             
             // Only use stable samples
-            if (fabsf(gxf) < 0.1f && fabsf(gyf) < 0.1f && fabsf(gzf) < 0.1f) {
+            if (fabsf(gxf) < 3.1f && fabsf(gyf) < 3.1f && fabsf(gzf) < 3.1f) {
                 sumX += gxf;
                 sumY += gyf;
                 sumZ += gzf;

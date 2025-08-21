@@ -1,6 +1,6 @@
 {
   "C_Cpp.intelliSenseEngine": "default",
-  "idf.espIdfPath": "/home/minhphi/esp/v5.4.1/esp-idf",
+  "idf.espIdfPath": "/home/minhphi/esp/v5.1/esp-idf",
   "idf.pythonInstallPath": "/home/minhphi/.pyenv/shims/python",
   "idf.openOcdConfigs": [
     "board/esp32s3-builtin.cfg"
@@ -12,6 +12,13 @@
   },
   "files.associations": {
     "arduino.h": "c",
-    "format": "cpp"
-  }
+    "format": "cpp",
+    "unordered_map": "cpp",
+    "fstream": "cpp",
+    "istream": "cpp",
+    "numeric": "cpp",
+    "ostream": "cpp",
+    "sstream": "cpp"
+  },
+  "idf.flashType": "JTAG"
 }

@@ -444,19 +444,18 @@ void MPU9250::calculateAngles() {
     float adaptiveAccCoef = _accCoef;
     float adaptiveGyroCoef = _gyroCoef;
     
-    if (gyroMagnitude > 50.0f) {
-        // Fast motion - trust gyroscope more
-        adaptiveAccCoef = 0.005f;
-        adaptiveGyroCoef = 0.995f;
-    } else if (gyroMagnitude > 10.0f) {
-        // Medium motion - balanced
-        adaptiveAccCoef = 0.01f;
-        adaptiveGyroCoef = 0.99f;
-    } else {
-        // Slow motion - trust accelerometer more for stability
-        adaptiveAccCoef = 0.05f;
-        adaptiveGyroCoef = 0.95f;
-    }
+    // if (gyroMagnitude > 50.0f) {
+    //     // Fast motion - trust gyroscope more
+        adaptiveAccCoef = 0.002f;
+        adaptiveGyroCoef = 0.998f;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+    //     // Medium motion - balanced
+    //     adaptiveAccCoef = 0.01f;
+    //     adaptiveGyroCoef = 0.99f;
+    // } else {
+    //     // Slow motion - trust accelerometer more for stability
+    //     adaptiveAccCoef = 0.05f;
+    //     adaptiveGyroCoef = 0.95f;
+    // }
     
     // Apply adaptive complementary filter
     if (accValid) {
@@ -502,7 +501,7 @@ esp_err_t MPU9250::calibrateGyro() {
             float gzf = (float)gz * _gyroScale;
             
             // Only use stable samples
-            if (fabsf(gxf) < 3.1f && fabsf(gyf) < 3.1f && fabsf(gzf) < 3.1f) {
+            if (fabsf(gxf) < 2.1f && fabsf(gyf) < 2.1f && fabsf(gzf) < 2.1f) {
                 sumX += gxf;
                 sumY += gyf;
                 sumZ += gzf;

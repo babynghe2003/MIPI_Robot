@@ -10,6 +10,7 @@
 #include "app_config.h"
 #include "task_manager.h"
 #include "esp_log.h"
+#include "pid_console.h"
 
 static const char *TAG = "MIPIRobot_NEO";
 
@@ -30,6 +31,8 @@ void app_main(void)
         ESP_LOGE(TAG, "Failed to initialize task manager");
         return;
     }
+    // Start PID console over UART for live tuning
+    pid_console_start();
     
     ESP_LOGI(TAG, "=== System Ready ===");
     

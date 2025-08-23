@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../VKU/Nam4/RobotDiDong/PID_Control"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"arduino.h": "c",
+			"format": "cpp",
+			"unordered_map": "cpp",
+			"fstream": "cpp",
+			"istream": "cpp",
+			"numeric": "cpp",
+			"ostream": "cpp",
+			"sstream": "cpp"
+		}
+	}
+}

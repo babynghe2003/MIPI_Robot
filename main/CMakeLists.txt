@@ -13,6 +13,7 @@ idf_component_register(
         "modules/sensors/mpu9250_bridge.cpp"
         "modules/sensors/mpu9250_control.c"
         "modules/robot/robot_task.cpp"
+    "modules/console/pid_console.c"
         "tasks/task_manager.c"
     INCLUDE_DIRS 
         "include"

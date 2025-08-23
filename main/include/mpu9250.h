@@ -1,13 +1,38 @@
+
 #pragma once
 
 #include <stdint.h>
 #include "i2c_bus.h"
 #include "esp_err.h"
 
+typedef struct {
+    float x;
+    float y;
+    float z;
+} mpu9250_angles_t;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} mpu9250_accel_t;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} mpu9250_gyro_t;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} mpu9250_mag_t;
+
 class MPU9250 {
 public:
     // Constructor
-    MPU9250(i2c_bus_handle_t bus_handle, i2c_bus_device_handle_t device_handle);
+    MPU9250(i2c_bus_handle_t bus_handle);
     
     // Destructor
     ~MPU9250();

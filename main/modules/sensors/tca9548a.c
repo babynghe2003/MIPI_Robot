@@ -87,62 +87,6 @@ esp_err_t tca9548a_select_channel(tca9548a_handle_t* handle, uint8_t channel) {
     return ESP_OK;
 }
 
-uint8_t tca9548a_get_current_channel(tca9548a_handle_t* handle) {
-    if (!handle || !handle->initialized) {
-        return TCA9548A_CHANNEL_NONE;
-    }
-    return handle->current_channel;
-}
-
-int tca9548a_scan_channel(tca9548a_handle_t* handle, uint8_t channel, uint8_t* devices, int max_devices) {
-    if (!handle || !handle->initialized || !devices || max_devices <= 0) {
-        ESP_LOGE(TAG, "Invalid parameters for channel scan");
-        return -1;
-    }
-
-    if (channel > 7) {
-        ESP_LOGE(TAG, "Invalid channel for scan: %d", channel);
-        return -1;
-    }
-
-    // Select the channel
-    esp_err_t ret = tca9548a_select_channel(handle, channel);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to select channel %d for scanning", channel);
-        return -1;
-    }
-
-    ESP_LOGI(TAG, "Scanning channel %d for I2C devices...", channel);
-    
-    int device_count = 0;
-    
-    // Scan all possible I2C addresses (0x08 to 0x77)
-    for (uint8_t addr = 0x08; addr <= 0x77; addr++) {
-        if (device_count >= max_devices) {
-            break;
-        }
-
-        // Create temporary device handle for testing
-        i2c_bus_device_handle_t test_device = i2c_bus_device_create(handle->bus_handle, addr, 0);
-        if (test_device) {
-            // Try to read from the device
-            uint8_t test_byte;
-            esp_err_t test_ret = i2c_bus_read_bytes(test_device, NULL_I2C_MEM_ADDR, 1, &test_byte);
-            
-            if (test_ret == ESP_OK) {
-                devices[device_count] = addr;
-                device_count++;
-                ESP_LOGI(TAG, "  Found device at address 0x%02X", addr);
-            }
-            
-            i2c_bus_device_delete(&test_device);
-        }
-    }
-
-    ESP_LOGI(TAG, "Channel %d scan complete. Found %d devices", channel, device_count);
-    return device_count;
-}
-
 esp_err_t tca9548a_deinit(tca9548a_handle_t* handle) {
     if (!handle) {
         return ESP_OK;

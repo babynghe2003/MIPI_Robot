@@ -4,7 +4,6 @@
 #include <string>
 
 // ESP-IDF and project includes
-#include "mpu9250_control.h"
 #include "app_config.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -12,6 +11,7 @@
 #include "freertos/semphr.h"
 #include "esp_simplefoc.h"
 #include "cas5600.h"
+#include "mpu9250.h"
 #include "pid.h"
 #include "sensors/Encoder.h" // TODO: remove if not used elsewhere
 #include "driver/gpio.h"
@@ -64,6 +64,7 @@ static tca9548a_handle_t* mux_handle = nullptr;
 // AS5600 sensor instances
 CAS5600 as5600_left = CAS5600();
 CAS5600 as5600_right = CAS5600();
+MPU9250* mpu9250;
 
 BLDCMotor motorLeft = BLDCMotor(7,10,150);
 BLDCDriver3PWM driverLeft = BLDCDriver3PWM(LEFT_MOTOR_CHANNEL_A, LEFT_MOTOR_CHANNEL_B, LEFT_MOTOR_CHANNEL_C);
@@ -80,16 +81,12 @@ PIDController pid_dir{DEFAULT_KP3, DEFAULT_KI3, DEFAULT_KD3, 1000, 1}; // Even l
 
 // Optional filters (tune time constants as needed)
 LowPassFilter lpf_error_pos{0.05f};  // Filter for position error used by pid_pos
-LowPassFilter lpf_error_dir{0.05f};  // Filter for position error used by pid_pos
+LowPassFilter lpf_error_dir{0.05f};  // Filter for direction error used by pid_pos
 
 // Sensor data structure
 static struct {
     // MPU9250 data
     mpu9250_angles_t angles;
-    mpu9250_accel_t accel;
-    mpu9250_gyro_t gyro;
-    mpu9250_mag_t mag;
-    float temperature;
     
     // AS5600 data
     float as5600_left_angle;
@@ -324,7 +321,7 @@ static esp_err_t init_mpu9250(void)
         return ret;
     }
     
-    ret = mpu9250_init_with_bus(shared_i2c_bus);
+    mpu9250 = new MPU9250(shared_i2c_bus);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize MPU9250: %s", esp_err_to_name(ret));
         set_robot_state(ROBOT_STATE_SENSOR_ERROR);
@@ -335,7 +332,7 @@ static esp_err_t init_mpu9250(void)
     // Calibrate MPU9250 gyroscope
     set_robot_state(ROBOT_STATE_CALIBRATING);
     ESP_LOGD(TAG, "Starting gyroscope calibration...");
-    ret = mpu9250_calibrate_gyro();
+    ret = mpu9250->begin();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "MPU9250 gyroscope calibration failed: %s", esp_err_to_name(ret));
         set_robot_state(ROBOT_STATE_SENSOR_ERROR);
@@ -378,7 +375,7 @@ static void read_sensor_data(void)
     // Read MPU9250 data (channel 1)
     esp_err_t ret = tca9548a_select_channel(mux_handle, TCA9548A_CHANNEL_1);
     if (ret == ESP_OK) {
-        mpu9250_read_sensor();
+        mpu9250->readSensor();
     }
     
     // Read AS5600 right sensor (same channel as MPU9250)
@@ -393,11 +390,9 @@ static void read_sensor_data(void)
     // Update shared data structure with mutex protection
     if (xSemaphoreTake(data_mutex, pdMS_TO_TICKS(1)) == pdTRUE) {
         // MPU9250 data
-        mpu9250_get_angles(&sensor_data.angles);
-        mpu9250_get_accel(&sensor_data.accel);
-        mpu9250_get_gyro(&sensor_data.gyro);
-        mpu9250_get_mag(&sensor_data.mag);
-        mpu9250_get_temperature(&sensor_data.temperature);
+        sensor_data.angles.x = mpu9250->getAngleX();
+        sensor_data.angles.y = mpu9250->getAngleY();
+        sensor_data.angles.z = mpu9250->getAngleZ();
         
         // AS5600 data
         sensor_data.as5600_left_angle = left; 
@@ -414,10 +409,6 @@ static void caculate_pid(){
     
     // Local copies of sensor data
     mpu9250_angles_t angles = {};
-    mpu9250_accel_t accel;
-    mpu9250_gyro_t gyro;
-    mpu9250_mag_t mag;
-    float temperature;
     float left_angle = 0.0f;
     float right_angle = 0.0f;
     float target_l = 0.0f, target_r = 0.0f;
@@ -430,41 +421,40 @@ static void caculate_pid(){
     if (xSemaphoreTake(data_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
         if (sensor_data.data_ready) {
             angles = sensor_data.angles;
-            accel = sensor_data.accel;
-            gyro = sensor_data.gyro;
-            mag = sensor_data.mag;
-            temperature = sensor_data.temperature;
             left_angle = sensor_data.as5600_left_angle;
             right_angle = sensor_data.as5600_right_angle;
         }
         xSemaphoreGive(data_mutex);
     }
 
+    if (pid_param_mutex && xSemaphoreTake(pid_param_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
 
-    float error_pos_left = left_angle - target_l;
-    float error_pos_right = -(right_angle - target_r);
+      float error_pos_left = left_angle - target_l;
+      float error_pos_right = -(right_angle - target_r);
 
-    float error_pos = (error_pos_left + error_pos_right) / 2;
-    // Low-pass filter the position error to reduce oscillations/noise
-    float error_pos_f = lpf_error_pos(error_pos);
-    float output_pos = pid_pos(error_pos_f);
+      float error_pos = (error_pos_left + error_pos_right) / 2;
+      // Low-pass filter the position error to reduce oscillations/noise
+      float error_pos_f = lpf_error_pos(error_pos);
+      float output_pos = pid_pos(error_pos_f);
 
-    float error_dir = error_pos_left-error_pos_right;
-    float error_dir_f = lpf_error_dir(error_dir);
-    float output_dir = pid_dir(error_dir_f);
+      float error_dir = error_pos_left-error_pos_right;
+      float error_dir_f = lpf_error_dir(error_dir);
+      float output_dir = pid_dir(error_dir_f);
 
-    float error_left = -(angles.y - OFF_SET) + output_pos;
-    float error_right = -(angles.y - OFF_SET) + output_pos;
+      float error_left = -(angles.y - OFF_SET) + output_pos;
+      float error_right = -(angles.y - OFF_SET) + output_pos;
 
 
-    float output_l = pid_stab_L(error_left) - output_dir;
-    float output_r = pid_stab_R(error_right) + output_dir;
+      float output_l = pid_stab_L(error_left) - output_dir;
+      float output_r = pid_stab_R(error_right) + output_dir;
 
-    if (xSemaphoreTake(motor_mutex, pdMS_TO_TICKS(10)) == pdTRUE){
-        motor_data.motor_left_speed = output_l;
-        motor_data.motor_right_speed = output_r;
-        motor_data.data_ready = true;
-        xSemaphoreGive(motor_mutex);
+      if (xSemaphoreTake(motor_mutex, pdMS_TO_TICKS(10)) == pdTRUE){
+          motor_data.motor_left_speed = output_l;
+          motor_data.motor_right_speed = output_r;
+          motor_data.data_ready = true;
+          xSemaphoreGive(motor_mutex);
+      }
+      xSemaphoreGive(pid_param_mutex);
     }
 
 }
@@ -473,7 +463,6 @@ extern "C" void robot_update_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "Robot update task started (1ms interval)");
     set_robot_state(ROBOT_STATE_INIT);
-    vTaskDelay(pdMS_TO_TICKS(100)); // 1000Hz update rate
 
     // Initialize I2C system and multiplexer
     if (init_i2c_system() != ESP_OK) {
@@ -553,10 +542,6 @@ extern "C" void mpu9250_display_task(void *pvParameters)
     
     // Local copies of sensor data
     mpu9250_angles_t angles;
-    mpu9250_accel_t accel;
-    mpu9250_gyro_t gyro;
-    mpu9250_mag_t mag;
-    float temperature;
     float left_angle, right_angle;
     bool data_ready = false;
     
@@ -565,10 +550,6 @@ extern "C" void mpu9250_display_task(void *pvParameters)
         if (xSemaphoreTake(data_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
             if (sensor_data.data_ready) {
                 angles = sensor_data.angles;
-                accel = sensor_data.accel;
-                gyro = sensor_data.gyro;
-                mag = sensor_data.mag;
-                temperature = sensor_data.temperature;
                 left_angle = sensor_data.as5600_left_angle;
                 right_angle = sensor_data.as5600_right_angle;
                 data_ready = true;
@@ -580,20 +561,10 @@ extern "C" void mpu9250_display_task(void *pvParameters)
     if (data_ready && g_logging_enabled) {
             float t_l = 0.0f, t_r = 0.0f;
             targets_get(&t_l, &t_r);
-            ESP_LOGI(TAG, "MPU9250[X:%6.2f° Y:%6.2f° Z:%6.2f°] AS5600-L[%6.2f°] AS5600-R[%6.2f°] T-L[%6.2f°] T-R[%6.2f°] Temp[%.1f°C]", 
+            ESP_LOGI(TAG, "MPU9250[X:%6.2f° Y:%6.2f° Z:%6.2f°] AS5600-L[%6.2f°] AS5600-R[%6.2f°] T-L[%6.2f°] T-R[%6.2f°]", 
                      angles.x, angles.y, angles.z, 
                      left_angle, right_angle,
-                     t_l, t_r,
-                     temperature);
-            
-            if (DEBUG_SENSOR_DATA) {
-                ESP_LOGD(TAG, "Accel -> X: %6.2f m/s², Y: %6.2f m/s², Z: %6.2f m/s²", 
-                         accel.x, accel.y, accel.z);
-                ESP_LOGD(TAG, "Gyro  -> X: %6.3f rad/s, Y: %6.3f rad/s, Z: %6.3f rad/s", 
-                         gyro.x, gyro.y, gyro.z);
-                ESP_LOGD(TAG, "Mag   -> X: %7.2f µT, Y: %7.2f µT, Z: %7.2f µT", 
-                         mag.x, mag.y, mag.z);
-            }
+                     t_l, t_r);
             data_ready = false;
         }
         
@@ -608,10 +579,10 @@ extern "C" void robot_task(void *pvParameters)
     // Lấy callback từ parameters
     robot_task_params_t *params = (robot_task_params_t *)pvParameters;
     if (params != NULL && params->state_callback != NULL) {
-        g_state_callback = params->state_callback;
-    ESP_LOGD(TAG, "Robot state callback registered successfully");
+      g_state_callback = params->state_callback;
+      ESP_LOGD(TAG, "Robot state callback registered successfully");
     } else {
-        ESP_LOGW(TAG, "No state callback provided - LED status will not work");
+      ESP_LOGW(TAG, "No state callback provided - LED status will not work");
     }
     
     data_mutex = xSemaphoreCreateMutex();

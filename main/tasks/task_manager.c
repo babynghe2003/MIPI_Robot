@@ -90,8 +90,6 @@ esp_err_t task_manager_init(void) {
         return ESP_FAIL;
     }
     
-    // Small delay to let system stabilize
-    vTaskDelay(pdMS_TO_TICKS(100));
     
     // Create LED task if enabled
     if (MODULE_LED_ENABLED) {
@@ -110,9 +108,6 @@ esp_err_t task_manager_init(void) {
         }
         ESP_LOGI(TAG, "LED task created successfully");
     }
-    
-    // Add delay between task creations
-    vTaskDelay(pdMS_TO_TICKS(500));
     
     // Create servo task if enabled
     if (MODULE_SERVO_ENABLED) {
@@ -133,8 +128,8 @@ esp_err_t task_manager_init(void) {
     }
     
     // Create MPU9250 sensor task if enabled
-    if (MODULE_SENSORS_ENABLED) {
-        ESP_LOGI(TAG, "Creating MPU9250 sensor task...");
+    if (MODULE_ROBOT_ENABLED) {
+        ESP_LOGI(TAG, "Creating Robot task...");
         
         // Tạo parameters cho robot task với callback
         static robot_task_params_t robot_params = {
@@ -146,17 +141,16 @@ esp_err_t task_manager_init(void) {
             "robot_task", 
             TASK_STACK_SIZE_LARGE,  // MPU9250 needs more stack for I2C operations
             &robot_params,          // Truyền callback qua parameters
-            TASK_PRIORITY_NORMAL, 
+            TASK_PRIORITY_HIGH, 
             NULL
         );
         if (robot_task_created != pdPASS) {
-            ESP_LOGE(TAG, "Failed to create MPU9250 task");
+            ESP_LOGE(TAG, "Failed to create robot task");
             return ESP_FAIL;
         }
-        ESP_LOGI(TAG, "MPU9250 task created successfully");
+        ESP_LOGI(TAG, "Robot task created successfully");
         
         // Add delay after sensor initialization
-        vTaskDelay(pdMS_TO_TICKS(500));
     }
 
     

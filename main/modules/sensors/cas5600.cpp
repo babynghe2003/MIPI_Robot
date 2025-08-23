@@ -36,7 +36,6 @@ void CAS5600::init()
 
 void CAS5600::deinit()
 {
-    esp_err_t ret = ESP_FAIL;
     i2c_bus_device_delete(&_i2c_device);
     ESP_RETURN_ON_FALSE(_i2c_device == NULL,, TAG, "AS5600 device delete fail");
     _is_installed = false;

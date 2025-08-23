@@ -60,8 +60,7 @@
 /* ========== Module Enable/Disable ========== */
 #define MODULE_SERVO_ENABLED        1
 #define MODULE_LED_ENABLED          1
-#define MODULE_SENSORS_ENABLED      1  // Enable when MPU is added
-#define MODULE_BLDC_ENABLED         1  // Enable BLDC motor control
+#define MODULE_ROBOT_ENABLED      1  // Enable when MPU is added
 #define MODULE_AUDIO_ENABLED        0  // Enable when I2S mic is added
 #define MODULE_WIFI_ENABLED         0  // Enable when WiFi is needed
 
@@ -76,7 +75,7 @@
 #define DEFAULT_KD 0.0025
 
 // Default PID values for PID2
-#define DEFAULT_KP2 2.3
+#define DEFAULT_KP2 4
 #define DEFAULT_KI2 0.0000
 #define DEFAULT_KD2 0.45
 

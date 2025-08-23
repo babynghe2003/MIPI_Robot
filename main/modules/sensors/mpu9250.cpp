@@ -1,4 +1,5 @@
-#include "mpu9250_idf.h"
+
+#include "mpu9250.h"
 #include "esp_log.h"
 #include "i2c_bus.h"
 #include <math.h>
@@ -125,9 +126,11 @@ static const char *TAG = "MPU9250";
 #define AK8963_ASAY                  0x11
 #define AK8963_ASAZ                  0x12
 
-MPU9250::MPU9250(i2c_bus_handle_t bus_handle, i2c_bus_device_handle_t device_handle)
-    : _bus_handle(bus_handle), _device_handle(device_handle), _mag_device_handle(NULL)
+MPU9250::MPU9250(i2c_bus_handle_t bus_handle)
 {
+    _bus_handle=bus_handle;
+    _device_handle = i2c_bus_device_create(_bus_handle, 0x68, 0);
+    _mag_device_handle = NULL;
     // Initialize variables
     _accCoef = 0.02f;
     _gyroCoef = 0.98f;

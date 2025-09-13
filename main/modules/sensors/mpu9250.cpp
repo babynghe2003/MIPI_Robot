@@ -1,4 +1,3 @@
-
 #include "mpu9250.h"
 #include "esp_log.h"
 #include "i2c_bus.h"
@@ -440,25 +439,10 @@ void MPU9250::calculateAngles() {
     _angleGyroY += gyroYDeg * _interval;
     _angleGyroZ += gyroZDeg * _interval;
     
-    // Adaptive complementary filter based on motion detection
-    float gyroMagnitude = sqrtf(gyroXDeg*gyroXDeg + gyroYDeg*gyroYDeg + gyroZDeg*gyroZDeg);
-    
     // Adjust filter coefficients based on motion
-    float adaptiveAccCoef = _accCoef;
-    float adaptiveGyroCoef = _gyroCoef;
+    float adaptiveAccCoef = 0.002f;
+    float adaptiveGyroCoef = 0.998f;
     
-    // if (gyroMagnitude > 50.0f) {
-    //     // Fast motion - trust gyroscope more
-        adaptiveAccCoef = 0.002f;
-        adaptiveGyroCoef = 0.998f;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-    //     // Medium motion - balanced
-    //     adaptiveAccCoef = 0.01f;
-    //     adaptiveGyroCoef = 0.99f;
-    // } else {
-    //     // Slow motion - trust accelerometer more for stability
-    //     adaptiveAccCoef = 0.05f;
-    //     adaptiveGyroCoef = 0.95f;
-    // }
     
     // Apply adaptive complementary filter
     if (accValid) {

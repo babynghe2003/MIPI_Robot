@@ -70,14 +70,14 @@
 
 
 // Default PID values for PID1
-#define DEFAULT_KP 0.08
+#define DEFAULT_KP 0.12
 #define DEFAULT_KI 0.00
-#define DEFAULT_KD 0.0025
+#define DEFAULT_KD 0.0035
 
 // Default PID values for PID2
 #define DEFAULT_KP2 4
 #define DEFAULT_KI2 0.0000
-#define DEFAULT_KD2 0.45
+#define DEFAULT_KD2 0.8 
 
 // Default PID values for PID3
 #define DEFAULT_KP3 0.3

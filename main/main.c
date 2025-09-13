@@ -21,7 +21,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Enabled modules: %s%s%s%s%s", 
              MODULE_LED_ENABLED ? "LED " : "",
              MODULE_SERVO_ENABLED ? "SERVO " : "",
-             MODULE_SENSORS_ENABLED ? "SENSORS " : "",
+             MODULE_ROBOT_ENABLED? "ROBOT" : "",
              MODULE_AUDIO_ENABLED ? "AUDIO " : "",
              MODULE_WIFI_ENABLED ? "WIFI " : "");
     
